@@ -202,3 +202,8 @@ hist(residuos_estimado.ts, breaks="FD", xlab="Residuos",
 x <- -50:50
 lines(x, 560*dnorm(x,0, sd(residuos_estimado.ts)),col=2)
 # esperamos un comportamiento de normalidad por que los residuos es como un ruido blanco y deben de distribuirse normalmente
+
+install.packages("momentos")
+library(momentos)
+kurtosis(residuos_estimado.ts,na.rm=FALSE)
+skewness(residuos_estimado.ts,na.rm=FALSE)
