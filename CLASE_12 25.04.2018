@@ -1,0 +1,45 @@
+install.packages("fpp")
+library(fpp)
+library(readxl)
+vector1 <- read_excel("C:/Users/Sala-D11/Documents/SERIES DE TIEMPO/vector1.xlsx")
+vector2 <- read_excel("C:/Users/Sala-D11/Documents/SERIES DE TIEMPO/vector2.xlsx")
+vector3 <- read_excel("C:/Users/Sala-D11/Documents/SERIES DE TIEMPO/vector3.xlsx")
+vector4 <- read_excel("C:/Users/Sala-D11/Documents/SERIES DE TIEMPO/vector4.xlsx")
+
+vector1.ts <- ts(vector1)
+vector2.ts <- ts(vector2)
+vector3.ts <- ts(vector3)
+vector4.ts <- ts(vector4)
+
+x11()
+par(mfrow=c(2,2))
+plot(vector1.ts,xlab="periodo",ylab="ventas de automoviles (miles)",col="red",main="VECTOR 1") # 
+plot(vector2.ts,xlab="periodo",ylab="contratos del banco de mexico",col="blue",main="VECTOR 2") # hay componente estacional o ciclica
+plot(vector3.ts,xlab="periodo",ylab="produccion de electricidad",col="green",main="VECTOR 3") # proceso multiplicativo
+plot(diff(vector4.ts),xlab="periodo",ylab="IPC bolsa mexicana de valores",col="purple",main="VECTOR 4") # ruido blanco, especial de lo financiero
+
+# DESCOMPOSICION DE UNA SERIE DE TIEMPO
+# si tiene tendencia lo descompongo y se hace mas notorio , pues r extrae esa parte
+library(readxl)
+estacional1 <- read_excel("C:/Users/Sala-D11/Documents/SERIES DE TIEMPO/estacional1.xlsx")
+estacional1.ts <- ts(estacional1,frequency = 4)
+
+estacional_descom <- decompose(estacional1.ts,type="multiplicative")
+
+plot(estacional_descom)
+# observed = los datos
+# trend = la tendencia
+# seasonal = magnifica estacionalidad
+# random = es como se deberia ver
+
+x11()
+par(mfrow=c(3,1))
+plot(estacional_descom$trend,xlab="periodo",ylab="componente tendencia",col="red")
+plot(estacional_descom$seasonal,xlab="periodo",ylab="componente estacional",col="navy")
+plot(estacional_descom$random,xlab="periodo",ylab="componente aleatoria",col="green")
+
+# PRONOSTICO
+x11()
+install.packages("forecast")
+library(forecast)
+plot(snaive(estacional1.ts),xlab="indicador",main="pronostico del indicador")
