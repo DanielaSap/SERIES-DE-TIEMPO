@@ -1,0 +1,91 @@
+# PROMEDIOS MOVILES SIMPLES : ENTONCES
+# NO TENDENCIA
+# NO ESTACIONALIDAD
+# POR PERIODOS pmsN
+
+# PROMEDIOS MOVILES PONDERADOS (PMP)
+# DAN MAS PESO A OBSERVACIONES MAS RECIENTES
+# RESTRICCION , LA SUMA DE LOS PESOS ES 1
+# LO MAS SIMPLE , EN FORMA ASCENDENTE
+# Y LE DAS MAS PONDERACION A LOS RECIENTE
+# PMP DE MAXIMO ORDEN 4
+
+# AMBOS NO MODELAN ESTACIONALIDAD NI TENDENCIA
+
+# SUEVIZADO EXPONENCIAL SIMPLE 
+# DA PONDERACIONDE FORMA DESCENDENTE
+# PROCESO SIN TENDENCIA NI ESTACIONALIDAD, PERO EXISTE UN PARAMETRO DE SUAVIZADO
+#  QUE DISTRIBUYE O ASIGNA LOS PESOS EXPONENCIALES DECRECIENTES
+
+# PUEDES AJUSTAR POR SEGMENTOS
+# SI ALFA ES 1 REPLICAS OBS ANTERIOR
+# SI ALFA ES 0 ELIMINAS OBSERVACION 
+
+library(fpp)
+library(readxl)
+smooth1 <- read_excel("G:/clases/time-series/topics/data/smooth1.xlsx")
+
+#######################################################################
+#Promedios moviles
+x11()
+smooth1.ts <- ts(smooth1, start=1996, end=2010)
+plot(smooth1.ts, ylab="Petroleo (millones de barriles)",xlab="Periodo", col="red")
+ma(smooth1, order=5) # movin average, promedios moviles de orden 5
+plot(ma(smooth1.ts, order=5), col="red")
+
+x11()
+plot(smooth1.ts, main="Promedios moviles simples",
+     ylab="Yt", xlab="Periodo")
+lines(ma(smooth1.ts, 5),col="red") # anexa la linea de promedios
+
+windows()
+par(mfrow=c(2,2))
+plot(smooth1.ts, main="Promedios moviles simples orden 5",
+     ylab="Yt", xlab="Periodo")
+lines(ma(smooth1.ts, 5),col="red")
+plot(smooth1.ts, main="Promedios moviles simples orden 4",
+     ylab="Yt", xlab="Periodo")
+lines(ma(smooth1.ts, 4),col="navy")
+plot(smooth1.ts, main="Promedios moviles simples orden 3",
+     ylab="Yt", xlab="Periodo")
+lines(ma(smooth1.ts, 3),col="green")
+plot(smooth1.ts, main="Promedios moviles simples orden 2",
+     ylab="Yt", xlab="Periodo")
+lines(ma(smooth1.ts, 2),col="purple")
+
+# el dos resulta ser el que mejor modela
+
+#
+x11()
+plot(smooth1.ts, main="Promedios moviles simples orden 5",
+     ylab="Yt", xlab="Periodo")
+lines(ma(smooth1.ts, 5),col="red")
+lines(ma(smooth1.ts, 4),col="navy")
+lines(ma(smooth1.ts, 3),col="green")
+lines(ma(smooth1.ts, 2),col="purple")
+
+############################################################################################
+#Suvizado Exponencial 
+
+x11()
+smooth1.ts <- ts(smooth1, start=1996, end=2007)
+plot(smooth1.ts, ylab="Petroleo (millones de barriles)",xlab="Periodo", col="red")
+
+x11()
+estimado1 <- ses(smooth1.ts, alpha=0.2, initial="simple", h=3) #suavizado exponencial simple
+estimado2 <- ses(smooth1.ts, alpha=0.6, initial="simple", h=3)
+estimado3 <- ses(smooth1.ts, h=3)
+plot(estimado1, plot.conf=FALSE, ylab="Petroleo (Millones de barriles)",
+     xlab="Year", main="Suavizado exponencial", fcol="white", type="o")
+lines(fitted(estimado1), col="blue", type="o")
+lines(fitted(estimado2), col="red", type="o")
+lines(fitted(estimado3), col="green", type="o")
+lines(estimado1$mean, col="blue", type="o")
+lines(estimado2$mean, col="red", type="o")
+lines(estimado3$mean, col="green", type="o")
+legend("topleft",lty=1, col=c(1,"blue","red","green"), 
+       c("Datos", expression(alpha == 0.2), expression(alpha == 0.6),
+         expression(alpha == 0.99)), pch=1)
+
+
+# lo hace el pronostico por el metodo de ingenuo 
