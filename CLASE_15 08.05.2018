@@ -1,0 +1,237 @@
+######################### ARIMA (p,d,q) ##########################################################
+
+#En un proceso estacionario estacionario sus propiedades no dependen del momento en el que se observa. 
+#Entonces, las series de tiempo con tendencias, o con la estacionalidad, no son estacionarias: 
+#la tendencia y la estacionalidad afectaran el valor de las series de tiempo en diferentes veces. 
+#Por otro lado, una serie de ruido blanco es estacionaria; no importa cuando la observe, 
+#deberia verse de manera similar en cualquier periodo de tiempo.
+
+#Algunos casos pueden ser confusos: una serie temporal con comportamiento ciclico (pero no con tendencia o estacionalidad) es estacionaria. 
+#Esto se debe a que los ciclos no son de longitud fija, por lo que antes de observar la serie no podemos estar seguros de dónde estaran
+#los picos y valles de los ciclos
+
+#En general, una serie temporal estacionaria no tendra patrones predecibles a largo plazo. 
+#Los graficos mostrarán que la serie es mas o menos horizontal (aunque es posible algún comportamiento cíclico) con varianza constante.
+
+library(fpp)
+library(readxl)
+
+huelgas <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/huelgas.xlsx")
+huelgas.ts <- ts(huelgas)
+
+ventas <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/ventas2.xlsx")
+ventas.ts <- ts(ventas)
+
+trigo <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/trigo.xlsx")
+trigo.ts <- ts(trigo)
+
+ganado <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/ganado.xlsx")
+ganado.ts <- ts(ganado)
+
+otros <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/otros.xlsx")
+otros.ts <- ts(otros)
+
+cerveza <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/cerveza.xlsx")
+cerveza.ts <- ts(cerveza)
+
+electricidad <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/electricidad.xlsx")
+electricidad.ts <- ts(electricidad)
+
+petroleo <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/petroleo.xlsx")
+petroleo.ts <- ts(petroleo)
+
+rates <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/rates.xlsx")
+rates.ts <- ts(rates)
+
+windows()
+par(mfrow=c(3,3))
+plot(huelgas.ts,main="huelgas")
+plot(ventas.ts, col="red",main="ventas")
+plot(trigo.ts, col="green",main="trigo")
+plot(ganado.ts, col="blue",main="ganado")
+plot(otros.ts, col="brown",main="otros") # estacional
+plot(cerveza.ts, col="purple",main="cerveza") # estacional
+plot(electricidad.ts, col="darkgoldenrod1",main="electricidad")
+plot(rates.ts, col="lightsalmon2",main="tasas")
+plot(petroleo.ts, col="yellow4",main="petroleo")
+
+#Cuales de los procesos son estacionarios. " equilibrio estadistico"
+
+############################################################################
+#Estacionariedad meidante diferenciacion
+
+indicador <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/indicador.xlsx")
+
+indicador.ts <- ts(indicador, start=c(1975,1), frequency=292) # frecuencia en dias habiles 
+windows()
+plot(indicador.ts, col="red") # no es estacionaria por que tiene tendencia
+
+#Q de Ljung-box. Diferenciación
+Box.test(indicador.ts, lag=25, type="Ljung-Box") # el jung box evalua en cada uno de los retardos si la funcion de autocorrrelacion es  estadisticamnte significativamente
+# p debe ser menor a 0.05 hay correlacion serial y es ademas por la marcada tendencia
+# 
+
+#Scatter
+x11()
+indfirst <- diff((indicador.ts)) # indicador de primeras
+plot(indicador.ts, indfirst, pch="circle", lty="dotted") # numero indica retardo 
+
+#Diferencias  # autocorrelacion 
+indicaacf <- acf(indicador.ts) # sin diferencia y aun existe mucha correlacion 
+indicadiff <- acf(diff(indicador.ts)) # funciones de la diferenciacion pero aun asi no es estacionaria
+indicadiff2 <- acf(diff(indicador.ts, lag=2)) # diferenciacion en retardo 2 pero aun asi no es estacionaria y se magnifica correlacion serial
+
+windows()
+plot()
+par(mfrow= c(1,3))
+plot(indicaacf, main="FAC yt")
+plot(indicadiff, main="FAC Primeras diferencias", col="red")
+plot(indicadiff2, main= "FAC Segundas diferencias", col="blue")
+
+
+################################################################
+#Prueba de raiz unitaria
+adf.test(indicador.ts, alternative = "stationary") # dickey-fuller
+# sirve para probar la significancia o existencia de raices unitarias, si existe entonces 
+# la raiz unitaria era cuando el er tomo un valor 1 
+# no se acepta, por que la raiz es unitaria, no es estacionario
+# como tiene tendencia entonces no va a ser estacionario 
+
+
+
+
+# en dickey-fuller
+# ho : no estacionaria, estas en beta
+# h1 : estacionario , estas en alfa
+
+# en KPSS
+# h1 : no estacionaria, estas en beta
+# h0 : estacionario , estas en alfa
+
+
+
+
+#Otra prueba popular de raiz unitaria es la prueba Kwiatkowski-Phillips-Schmidt-Shin (KPSS).
+#Esto invierte las hipotesis, por lo que la hipotesis nula es que los datos son estacionarios. 
+#En este caso, los valores p pequeños (por ejemplo, menos de 0.05) sugieren que se requiere diferenciacion.
+kpss.test(indicador.ts) # aqui se acepta h1
+# se debe rechazar alfa
+
+
+###
+medica <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/medica.xlsx")
+
+medica.ts <- ts(medica, start=c(1975,1), frequency=292)
+
+x11()
+par(mfrow=c(2,2))
+plot(medica.ts,main = "original")
+plot(log(medica.ts),main="log") # transformacion para suavizar por que los datos son muy grandes 
+plot(diff(log(medica.ts)),main="primera diferenciacion") # haces diferenciacion 
+plot(diff(diff(medica.ts)),main="dif orden 2") # 
+# si despues de todo esto no hay estacionariedad, ya no hay nada que hacer
+
+
+#Prueba estacionariedad: Dickey-Fuller
+adf.test(medica.ts, alternative = "stationary")
+# como p-value es 0.01 entonces estoy en alfa, y entonces es estacionario, acepto h1
+# para ser estacionario puede ser maximo 0.05
+
+kpss.test(medica.ts)
+
+
+
+###################################### ESTACIONARIA ######################################
+estacionaria <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/estacionaria.xlsx")
+
+estacionaria.ts <- ts(estacionaria, start=c(2000,1), frequency=12)
+x11()
+plot(estacionaria.ts, col="4")
+
+acf(estacionaria.ts, lag.max = 25)
+
+adf.test(estacionaria.ts,alternative = "stationary")
+# el p esta fuera de alfa, no es estacionario 
+
+list(acf(estacionaria.ts))
+
+
+###################################### DIFERENCIACION ######################################
+
+Box.test(estacionaria.ts, lag=25, type="Ljung-Box")
+
+###Número de diferenciaciones para hacer estacionaria yt
+ndiffs(indicador.ts, alpha=0.05, test=c("kpss","adf", "pp"), max.d=2) # lo mejor es la dif 1
+ndiffs(huelgas.ts, alpha=0.05, test=c("kpss","adf", "pp"), max.d=2)
+ndiffs(petroleo.ts, alpha=0.05, test=c("kpss","adf", "pp"), max.d=2)
+ndiffs(ganado.ts, alpha=0.05, test=c("kpss","adf", "pp"), max.d=2)
+ndiffs(otros.ts, alpha=0.05, test=c("kpss","adf", "pp"), max.d=2) # no necesitas hacer dif ya es estacionaria
+ndiffs(trigo.ts, alpha=0.05, test=c("kpss","adf", "pp"), max.d=2)
+
+
+
+######################### ARIMA 1 ######################################
+
+help(arima)
+
+library(readxl)
+
+ejemplo1 <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/ar1.xlsx")
+ejemplo1.ts <- ts(ejemplo1)
+
+fit1 <- arima(ejemplo1.ts[,1], order=c(1,0,0)) # valores en el arima pero como d es 0, es arma
+fit2 <- arima(ejemplo1.ts[,1], order=c(2,0,0))  # calcula parametros de fi
+fit3 <- arima(ejemplo1.ts[,1], order=c(3,0,0))
+
+par(mfrow=c(1,3))
+plot(forecast(fit1)) # pronosticos con las fis calculadas anteriormente 
+plot(forecast(fit2))
+plot(forecast(fit3))
+
+summary(fit1) # el menos 0.05 es el alfa
+summary(fit2) # se modifica el alfa por que es el 1 mas el 2 
+summary(fit3) # el mejor es el de fit 1 por que es menor aic por que se calcula con el error estandar
+
+
+ejemplo2 <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/ar2.xlsx")
+ejemplo2.ts <- ts(ejemplo2)
+
+fit4 <- Arima(diff(ejemplo2.ts), order=c(1,0,0))
+fit5 <- Arima(diff(ejemplo2.ts), order=c(2,0,0))
+fit6 <- Arima(diff(ejemplo2.ts), order=c(3,0,0))
+
+par(mfrow=c(1,3))
+plot(forecast(fit4))
+plot(forecast(fit5))
+plot(forecast(fit6))
+
+summary(fit4)
+summary(fit5)
+summary(fit6)
+
+
+help(Arima)
+help(arima)
+
+
+library(readxl)
+ejemplo2 <- read_excel("F://clases//time-series//topics//data//ar2.xlsx")
+ejemplo2.ts <- ts(ejemplo2)
+
+ma1 <- Arima(diff(ejemplo2.ts), order=c(0,0,1))
+ma2 <- Arima(diff(ejemplo2.ts), order=c(0,0,2))
+ma3 <- Arima(diff(ejemplo2.ts), order=c(0,0,3))
+
+par(mfrow=c(1,3))
+plot(forecast(ma1))
+plot(forecast(ma2))
+plot(forecast(ma3))
+
+summary(ma1)
+summary(ma2)
+summary(ma3)
+
+
+help(Arima)
+help(arima)
+
