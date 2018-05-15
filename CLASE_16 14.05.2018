@@ -1,0 +1,165 @@
+###########################  14.05.2018   ##############################
+######################### ARIMA 1 ######################################
+
+# PRUEBAS DE VERIFICAR MODELO NO ESTACIONAL 
+
+# CORRELOGRAMA
+# 2 PRUEBAS ESTADISTICAS CORRELACION SERIAL
+  # 1. DICKEY FULLER
+  # 2. KPSS
+
+# DEBES DE TENER UN MODELO BASE ARIMA(p,d,q)
+# CALCULA LOS VALORES DE BONDAD DE AJUSTE AIC, EL MEJOR ES EL QUE MINIMIZE
+
+
+help(arima)
+
+library(readxl)
+
+ejemplo1 <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/ar1.xlsx")
+ejemplo1.ts <- ts(ejemplo1)
+
+# PARA ENCONTRAR EL ORDEN AR
+# LAS FUNCIONES DE AUTOCORRELACION
+acf(ejemplo1.ts[,1])
+# tendria correlacion serial en la obs 5
+# es decir ahi es estadisticamente significativo
+# ademas la correlacion es significativamente AR por que la obs 4 esta determinada por obs 5
+# es correcto evaluar ARIMA(5,0,0) por que ahi es AR
+
+
+fit1 <- arima(ejemplo1.ts[,1], order=c(1,0,0)) # valores en el arima pero como d es 0, es arma
+fit2 <- arima(ejemplo1.ts[,1], order=c(2,0,0))  # calcula parametros de fi
+fit3 <- arima(ejemplo1.ts[,1], order=c(3,0,0))
+
+par(mfrow=c(1,3))
+plot(forecast(fit1)) # pronosticos con las fis calculadas anteriormente 
+plot(forecast(fit2))
+plot(forecast(fit3))
+
+summary(fit1) # el menos 0.05 es el alfa
+summary(fit2) # se modifica el alfa por que es el 1 mas el 2 
+summary(fit3) # el mejor es el de fit 1 por que es menor aic por que se calcula con el error estandar
+
+
+ejemplo2 <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/ar2.xlsx")
+ejemplo2.ts <- ts(ejemplo2)
+
+fit4 <- Arima(diff(ejemplo2.ts), order=c(1,0,0))
+fit5 <- Arima(diff(ejemplo2.ts), order=c(2,0,0))
+fit6 <- Arima(diff(ejemplo2.ts), order=c(3,0,0))
+
+par(mfrow=c(1,3))
+plot(forecast(fit4))
+plot(forecast(fit5))
+plot(forecast(fit6))
+
+summary(fit4)
+summary(fit5)
+summary(fit6)
+
+
+help(Arima)
+help(arima)
+
+
+library(readxl)
+ejemplo2 <- read_excel("F://clases//time-series//topics//data//ar2.xlsx")
+ejemplo2.ts <- ts(ejemplo2)
+
+ma1 <- Arima(diff(ejemplo2.ts), order=c(0,0,1))
+ma2 <- Arima(diff(ejemplo2.ts), order=c(0,0,2))
+ma3 <- Arima(diff(ejemplo2.ts), order=c(0,0,3))
+
+par(mfrow=c(1,3))
+plot(forecast(ma1))
+plot(forecast(ma2))
+plot(forecast(ma3))
+
+summary(ma1)
+summary(ma2)
+summary(ma3)
+
+
+help(Arima)
+help(arima)
+
+
+
+# FUNCION AUTOARIMA
+
+
+#USANDO LA FUNCION ARIMA PUEDE MODELARSE UN PROCESO
+#TAMBIEN PUEDE GENERARSE AUTOMATICAMENTE UN CONJUNTO OPTIMO (p,d,q) USANDO LA FUNCION AUTOARIMA
+#ESTA FUNCION BUSCA ATRAVES DE COMBINACIONES DE PARAMETROS DE ORDEN (p,d,q) Y SELECCIONA EL CONJUNTO 
+# QUE OPTIMIZA LOS CRITERIOS DE AJUSTE DE MODELO
+
+# pero aun asi hay que comprobar reduciendo e incrementando el AR, y comparando los AIC
+
+library(fpp)
+library(readxl)
+ejemplo1 <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/ar1.xlsx")
+ejemplo1.ts <- ts(ejemplo1)
+ejemplo2 <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/ar2.xlsx")
+ejemplo2.ts <- ts(ejemplo2)
+
+# para modelar arima
+# se grafica 
+# funcion de aurocorrelacion parcial para saber si es estacionario
+# posibilidad de transformaciones
+# diferencias
+# segundas diferencias
+# si sigue sin ser estacionario , corro AR e identifico ordenes
+
+auto.arima(ejemplo1.ts[,2],seasonal =F) # arima es sistema de modelado box jeickin, procesos iterativos
+# pide columna 2 por que la base tiene dos variables y dice que no es estacional 
+# las ma son las tetas por que es MA
+# EL AIC  es 319.46
+
+# para modelar opcionales
+# ARIMA(1,0,3)
+arima(ejemplo1.ts[,2],order=c(1,0,3))  # AIC=319.54
+# ARIMA(0,1,3)
+arima(ejemplo1.ts[,2],order=c(0,1,3))  # AIC=333.93
+# ARIMA(0,0,2)
+arima(ejemplo1.ts[,2],order=c(0,0,2))  # AIC=331.54
+# ARIMA(0,0,4)
+arima(ejemplo1.ts[,2],order=c(0,0,4))  # AIC=321.24
+# el mejor es el que estimo R
+
+# ARIMA (0,1,0)  ES CON TENDENCIA , PERO NO TIENE SENTIDO
+
+
+auto.arima(ejemplo2.ts,seasonal =F) # AIC=2641.81
+# RESULTA ARIMA(0,1,0) ENTONCES LA DRIFT ES LA TENDENCIA
+
+# ARIMA OPCIONAL
+# ARIMA(1,1,0)
+arima(ejemplo2.ts,order=c(1,1,0))  # AIC=2641.38
+# ARIMA(0,1,1)
+arima(ejemplo2.ts,order=c(0,1,1))  # AIC=2641.47
+# ARIMA(0,1,0)
+arima(ejemplo2.ts,order=c(0,1,0))  # AIC=2640.09
+# al correrlo a mano con mismos parametros de auto arima, da otro valor por que que el autoarima considera
+# iteraciones , mete un parametro mas y eso es penalizado por AIC
+plot(acf(ejemplo2.ts))
+
+# una vez ajustado el modelo que puede proucir un pronostico ¡ tiene sentido ?
+# puedes confiar en este modelo ?
+# un examen de los grafico FAC y FACP para los residuos del modelo pueden ayudar
+# si los parametros de orden del modelo y la estructira se especifican correctamente, no habria autocorrelaciones
+# significativas 
+estimado <- auto.arima(ejemplo1.ts[,2],seasonal = F)
+x11()
+tsdisplay(residuals(estimado),lag.max = 5,main = "residuos del modelo ARIMA(0,1,0)") # EL 5 ES EL MAXIMO DE RETARDOS A EVALUAR
+# SI ES ESTACIONARIO EN UN MOMETO DEBE DE SERLO EN TODO
+# LOS RESIDUOS OSCILAN A CERO , COMPORTAMIENTO CLASICO DE ESTACIONARIO Y SE VERIFICA EN LAS FUNCIONES DE AUTOCORRELACION DE LOS RESIDUOS 
+# PUES ESTOS DEBEN SER INDEPENDIENTES 
+
+# FUNCIONES DE AUTOCCORRELACION PARA YT 
+# TRANSFORMACION 
+# DIFERENCIAS
+# SEGUNDAS DIFERENCIAS
+# OBTIENES ARIMA 
+# ESTIMAS FAC DE RESIDUOS ( funcion de autoccorrelacion )
+# TIENES CERTESA ESTADISTICA PARA DECIR QUE FUE EL MEJOR 
