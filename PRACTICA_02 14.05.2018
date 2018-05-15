@@ -1,0 +1,35 @@
+################# PRACTICA  ###########################
+
+# AJUSTE UN MODELO ARIMA NO ESTACIONAL "cerveza"
+# UTILICE LA FUNCION ARIMA
+# CONTARSTE RESULTADO DE PUNTO 1 UTILIZANDO AUTO,ARIMA
+cerveza <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/cerveza.xlsx")
+cerveza.ts <- ts(cerveza)
+plot(cerveza.ts)
+# con solo la grafica se puede notar que el modelo si es estacional 
+# sin embargo aplicando ARIMA
+Acf(cerveza.ts)
+# la grafica muestra que en la observacion 5 la autocorrelacion de sale de los parametros entonces
+arima(cerveza.ts,order = c(5,0,0))
+# resulta un AIC  de 489.3
+arima(cerveza.ts,order = c(4,0,0))
+# resulta un AIC  de 489.17
+arima(cerveza.ts,order = c(6,0,0))
+# resulta un AIC  de 484.32
+
+# hasta aqui el mejor modelo es un autoregresivo de orden 6
+# probando con el autoarima
+auto.arima(cerveza.ts,seasonal = F)
+# arroja que el mejor modelo debe ser ARIMA(0,0,1)
+# con un AIC de 485.13
+# probando con otros modelos
+arima(cerveza.ts,order = c(0,0,2))
+# resulta un AIC  de 487.02
+arima(cerveza.ts,order = c(1,0,1))
+# resulta un AIC  de 487
+
+# el mejor modelo por menor AIC resulta ser del modelo ARIMA(6,0,0)
+# sin embargo el modelo ARIMA(0,0,1) que es el propuesto seria mejor por el menor numero de parametros
+# si lo comprobamos sin iteraciones
+arima(cerveza.ts,order = c(0,0,1))
+# resulta un AIC  de 485.13 igual al de iteraciones
