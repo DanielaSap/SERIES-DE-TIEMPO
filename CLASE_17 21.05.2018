@@ -1,0 +1,134 @@
+################################################################################################
+################################################################################################
+
+library(fpp)
+
+##ARIMA estacionalidad. Ejemplo 1
+library(readxl)
+estacional1 <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/arima_est1.xlsx")
+estacional1.ts <- ts(estacional1, start= c(2000, 1), frequency=12) #( filas)año2000,columnas(mes)
+x11()
+plot(estacional1.ts, col="6")
+###Observando la grafica, no se identifica tendencia ni componentes estacionales
+
+###Funcion auto.arima
+#Modelo a estimar sin estacionalidad empleando la funcion auto.arima
+#Note que al incluir la opci?on "seasonal" indicamos que es falsa, es decir,
+#Yt no tiene componentes estacionales.
+estacional1.arima <- auto.arima(estacional1.ts, seasonal=FALSE)
+
+#Grafico y resumen de pronosticos(forecast)
+windows()
+plot(forecast(estacional1.arima, h=24)) # anual, entonces dos años (24)
+# los resultados son lineales , por que no incluye las componentes estacionales
+summary(forecast(estacional1.arima))
+#(0,0,0) entonces lineal, ruido blanco
+#Es importante que comparen los resultados del valor de los pronosticos con,
+#un metodo de pronostico revisado con anterioridad.
+
+#Graficos fac y facp Probamos la estacionariedad del modelo solo como forma de verificar
+x11()
+par(mfrow=c(1,2))
+acf(estacional1.ts, main="Funcion de autocorrelacion")
+# hasta aqui resulta ser estacionario 
+pacf(estacional1.ts, main="Funcion de autocorrelacion parcial")
+# pero ya con la parcial ya no es estacionario
+#Los resultados indican que el modelo estimado es estacionario.
+#Se trata de un modelo de Ruido Blanco. 
+tsdisplay(estacional1.ts)
+
+###Ejemplo 2. 
+library(readxl)
+estacional2 <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/arima_est2.xlsx")
+estacional2.ts <- ts(estacional2[,1], start= c(2000, 1), frequency=12)
+x11();plot(estacional2.ts, col="4")
+#La serie muestra tendencia y puede ser componentes estacionales, al dividirlo anualmente al menos 2 años lo cumple
+
+#Ajustamos el "mejor modelo" al proceso con la funcion auto.arima
+#note que nos mantenemos bajo un proceso sin estacionalidad.
+estacional2.arima <- auto.arima(estacional2.ts, seasonal=FALSE)
+windows()
+plot(forecast(estacional2.arima, h=12), include=80)
+summary(forecast(estacional2.arima))
+# tiene intervalos de confianza erroneos
+
+#Probamos mediante FAC y FACP la estacionariedad del modelo.
+x11(); par(mfrow=c(1,2))
+acf(estacional2.ts[,1], main="Funcion de autocorrelacion")
+pacf(estacional2.ts[,1], main="Funcion de autocorrelacion parcial")
+windows(); tsdisplay(estacional2.ts)
+#Observamos que no es un modelo estacionario.
+# lo que tiene es tendencia
+# y ya no hay nada que hacer 
+
+#?Que procedimiento debemos realizar?
+
+################################################################################################
+################################################################################################
+
+###ARIMA estacionalidad.
+
+library(readxl)
+estacional1 <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/arima_est2.xlsx")
+
+estacional1.ts <- ts(estacional1, start=c(2000, 1), frequency=4) # ahora es trimestral
+plot(estacional1.ts, ylab="Ventas trimestrales", xlab="Periodo", col="blue")
+x11(); par(mfrow=c(1,2))
+acf(estacional1.ts, main="Funcion de autocorrelacion")
+pacf(estacional1.ts, main="Funcion de autocorrelacion parcial")
+#Los resultados no muestran estacionariedad, con algun grado de estacionalidad. 
+#Estimamos una primeras diferencias. 
+
+plot(diff(estacional1.ts, 4)) # las diferencias son 4, por la estructura trimestral
+tsdisplay(diff(estacional1.ts, 4))
+# aun con diferencias sigue la tendencia
+
+#Recurrimos a un segundo proceso de diferenciacion
+x11()
+tsdisplay(diff(diff(estacional1.ts, 4)))
+# sigues intentando y sacas otras diferencias
+# por que hay componentes no estacionarios en el 1 y en el 4, entonces decimos es estacionariac
+
+#Una vez "estacionaria" la serie, procedemos a estimar un modelo ARIMA
+#El aumento en el retraso 1 en la FACP sugiere un componente no estacional MA (1), 
+#y el incremento en el retraso 4 en la FAC sugiere un componente estacional MA (1).
+#Modelo ARIMA (0,1,1) (0,1,1)4
+
+estimado1 <- arima(estacional1.ts, order= c(0,1,1), seasonal= c(0,1,1))
+x11()
+tsdisplay(residuals(estimado1))
+#Se encuentran picos en los retarsos 2 y 3. 
+# entonces se modifica en AR
+# para mdias moviles tendria que ser significante en 4 , 8 ,12 por periodicidad
+
+#Se prueba la inclusion de un modelo ARIMA(0,1,2) (0,1,1)4
+#Se prueba la inclusion de un modelo ARIMA(0,1,3) (0,1,1)4
+#Modelo ARIMA (0,1,3) (0,1,1)4
+estimado2 <- arima(estacional1.ts, order= c(0,1,2), seasonal= c(0,1,1))
+residuos2 <- residuals(estimado2)
+x11()
+tsdisplay(residuos2)
+summary(estimado2)
+
+#Modelo ARIMA (0,1,3) (0,1,1)4
+estimado3 <- Arima(estacional1.ts, order= c(0,1,3), seasonal= c(0,1,1))
+residuos3 <- residuals(estimado3)
+X11()
+tsdisplay(residuos3)
+summary(estimado3)
+# se elimina la significancia
+
+#Prueba de residuos
+Box.test(residuos3, lag=16, fitdf=4, type="Ljung")
+# el ljung valua el aleatoriedad de los residuos
+# y autocorrelaciones de cero , e independientes 
+# y para ser significativa es menor a 0.05
+# como es 0.85 entonces fue buen modelo
+
+#Graficamos y requerimos los valores de los pronosticos
+
+x11()
+plot(forecast(estimado3, h=20))
+summary(forecast(estimado3, h=20))
+# intervalos de confianza se disparan pero replica el modelo y tiene mejor prediccion 
+# y resulta ser el mejor modelo
