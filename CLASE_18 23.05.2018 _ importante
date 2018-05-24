@@ -142,7 +142,7 @@ x11();plot(pronosticos_arima_estimado2)
 #ajustar el modelo y luego comparar el pronostico con los valores reales observados:
 modelo_basico <- window(ts(datos_ejercicio.ts), start=700)
 
-modelo_valida2 <- arima(ts(datos_ejercicio.ts[-c(700:731)]), order=c(1,1,6))
+modelo_valida2 <- arima(ts(datos_ejercicio.ts[c(700:731)]), order=c(1,1,6))
 
 modelo_valida3 <- forecast(modelo_valida2, h=30)
 x11();plot(modelo_valida3, main=" ")
