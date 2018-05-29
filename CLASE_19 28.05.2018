@@ -1,0 +1,104 @@
+
+library(fpp)
+
+library(readxl)
+dinamico <- read_excel("C:/Users/Sala-D11/Documents/ARCHIVOS/dinamico.xlsx")
+
+dinamico.ts <- ts(dinamico)
+
+plot(dinamico.ts, xlab="Periodo",
+     main="Consumo e ingreso en una muestra")
+
+###
+#El objetivo del pronostico es conocer los cambios en 
+#los gastos en funcion de los cambios en los ingresos. 
+#Un aumento en los ingresos no se traduce necesariamente 
+#en un aumento instantaneo del consumo
+#Los datos ya son estacionarios, por lo que no es 
+#necesario realizar ninguna diferenciacion.
+#Entonces, primero regresamos el consumo sobre el ingreso 
+#asumiendo errores AR(2). Los valores de nt resultantes se grafican. 
+#Los posibles modelos ARIMA candidatos incluyen un MA(3) y un AR(2). 
+estimado <- arima(dinamico.ts[,1], xreg=dinamico[,2],
+             order=c(2,0,0))
+x11(); tsdisplay(residuals(estimado), main="Errores del ajuste ARIMA")
+
+
+#Sin embargo, una exploracion mas profunda revela que un 
+#ARIMA(1,0,2) tiene el valor de AICc mas bajo. 
+#Se reajusta el modelo con errores ARIMA(1,0,2).
+(estimado2 <- arima(dinamico.ts[,1], xreg=usconsumption[,2],
+               order=c(1,0,2)))
+
+#Se prueba que los errores no esten correlacionados
+Box.test(residuals(estimado2),fitdf=5,lag=10,type="Ljung")
+
+###
+#para realizar lso pronosticos se asumira que para los proximos 8 
+#trimestres, el cambio porcentual en el ingreso disponible personal
+#es igual al cambio porcentual medio de los ultimos cuarenta años.
+pronosticos1 <- forecast(estimado2, xreg=rep(mean(dinamico.ts[,2]), 8), h=8)
+x11(); plot(pronosticos1,
+     main="Pronosticos para la regresion de los errores de un modelo ARIMA(1,0,2)")
+
+###
+#Regresion con errores ARIMA
+#La funcirn arima() se ajustara a un modelo de regresion con errores
+#ARIMA si se usa el argumento xreg. El argumento de orden especifica
+#el orden del modelo de error ARIMA. Si se especifica diferenciacion, 
+#entonces la diferenciacion se aplica a todas las variables en el 
+#modelo de regresion antes de estimar el modelo. 
+#fit <- Arima(y, xreg=x, order=c(1,1,0))
+
+#La función auto.arima() tambien manejara los terminos de regresion.
+estimado2 <- auto.arima(dinamico.ts[,1], xreg=dinamico.ts[,2])
+
+
+###Desarrollo de pronosticos
+#Para pronosticar un modelo de regresion con errores ARIMA, 
+#Se debe pronosticar la parte de regresión del modelo y la parte 
+#ARIMA del modelo, y combinar los resultados. Al igual que con los 
+#modelos de regresion ordinarios, para obtener pronosticos, 
+#primero debemos pronosticar los predictores. Cuando los predictores 
+#se conocen esto es sencillo. Pero cuando los predictores son desconocidos, 
+#debemos modelarlos por separado o usar valores futuros asumidos para cada predictor.
+#Es importante darse cuenta de que los intervalos de prediccion de 
+#los modelos de regresion (con o sin errores ARIMA) no tienen en 
+#cuenta la incertidumbre en las predicciones de los predictores.
+
+#Tendencias estocasticas y deterministas
+#Hay dos formas diferentes de modelar una tendencia lineal. 
+#Se obtiene una tendencia determinista usando el modelo de regresion
+#yt = ??0 + ??1t + n't
+
+#donde nt es un proceso ARMA.
+
+#Se obtiene una tendencia estocastica usando el modelo
+#yt = ??0 + ??1t + nt,
+
+#donde nt es un proceso ARIMA con d = 1. En ese caso, puede diferenciarse 
+#ambos lados para que y't = ??1 + n't no sea un proceso ARMA. 
+#En otras palabras,
+#yt = yt-1 + ??1 + n't
+
+#Que es muy similar a una caminata aleatoria con deriva, pero aquí 
+#el termino de error es un proceso ARMA en lugar de ruido blanco.
+
+
+#Ejemplo
+#Entonces, el modelo de tendencia determinista se obtiene como:
+
+library(readxl)
+dinamico2 <- read_excel("G://clases//time-series//topics//data//dinamico2.xlsx")
+
+dinamico2.ts <- ts(dinamico2)
+
+x11();plot(dinamico2.ts, xlab="Periodo",
+     main="Modelo dinamico 2")
+
+
+#El modelo de tendencia estocastica se estima como:
+auto.arima(dinamico2.ts,d=0,xreg=1:length(dinamico2.ts))
+
+
+auto.arima(dinamico2.ts, d=1)
