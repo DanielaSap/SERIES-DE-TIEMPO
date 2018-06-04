@@ -1,0 +1,76 @@
+install.packages("readxl")
+library(fpp)
+library(readxl)
+datos <- read_excel("~/8 SEMESTRE/SERIES DE TIEMPO/DEUDA-EXTERNA.xlsx")
+deuda <- read_excel("~/8 SEMESTRE/SERIES DE TIEMPO/DEUDA-EXTERNA.xlsx")[,1:2]
+
+# EL GRAFICO DE LOS DATOS ORIGINALES
+X11();plot(deuda,main="DEUDA EXTERNA DE MÉXICO 1970 - 2017", sub = "Elaboración propia", xlab="AÑO",ylab="DEUDA",type = "line",col="darkgreen")
+
+#HACIENDO SERIE DE TIEMPO
+deuda.ts <- ts(deuda$DEUDA,frequency = 1,start = 1970)
+X11();plot(deuda.ts,main="DEUDA.ts",sub="Elaboración propia",xlab="AÑOS",ylab="DEUDA",col="darkgreen")
+
+#CON PRUEBA DICKEY FULLER
+adf.test(deuda.ts) # p 0.1901
+
+# APLICANDO TRANSFORMACION DE LOGARITMO Y PRUEBA
+transf <- log(deuda.ts)
+plot(transf)
+adf.test(transf) # p 0.0392
+  # el valor p-value ya se encuentra en un rango aceptable
+  # la serie ya se estabilizo 
+
+# PROBANDO AUTOCORRELACION Y AUTOCORRELACION PARCIAL 
+x11() ;deuda.acf <- acf(transf)
+x11() ;deuda.pacf <- pacf(transf)
+x11() :tsdisplay(transf)
+  # el proceso aun muestra una marcada tendencia 
+
+# DIFERENCIANDO EL PROCESO 
+transf2 <- diff(log(deuda.ts))
+adf.test(transf2)
+  # el valor de p-value aumenta considerablemente
+
+# SACANDO SEGUNDAS DIFERENCIAS DEL LOGARITMO
+transf3 <- diff(diff(log(deuda.ts)))
+adf.test(transf3)
+  # el valor de p-value resulta de 0.0222
+  # se encuentra en los rango aceptables
+
+# PROBANDO AUTOCORRELACIONES
+x11() ; tsdisplay(transf3)
+  # con los graficos se nota que se ncuentran dentro de los rangos
+
+# SE PROPONER ARIMA(6,2,2)
+arima(deuda.ts,order = c(6,2,2)) # aic = 2248.86
+
+# JUGANDO CON LOS VALORES
+  # MODIFICANDO AR
+arima(deuda.ts,order = c(7,2,2)) # aic = 2250.19
+arima(deuda.ts,order = c(5,2,2)) # aic = 2247.89 ** 
+arima(deuda.ts,order = c(4,2,2)) # aic = 2251.12
+  # MODIFICANDO MA
+arima(deuda.ts,order = c(6,2,3)) # aic = 2248.35 **
+arima(deuda.ts,order = c(6,2,1)) # aic = 2248.29
+arima(deuda.ts,order = c(6,2,4)) # aic = 2249.86  
+  # OTROS
+arima(deuda.ts,order = c(5,2,3)) # aic = 2246.42 ***
+
+# EL MEJOR MODELO POR EL MENOR AIC ES ARIMA(5,2,3)
+mod <- arima(deuda.ts,order = c(5,2,3)) # aic = 2246.42
+
+# GRAFICANDO EL MODELO
+x11() : tsdisplay(mod$residuals)
+  # pasa la pruebas y los residuos se mantienen en el rango aceptable
+
+# PROBANDO CON AUTOARIMA
+auto.arima(deuda.ts)
+  # se propone un ARIMA(0,1,0) pero con un aic de 2311.41
+  # por lo tanto mejor nos quedamos con nuestro modelo
+
+summary(mod)
+
+# PRONOSTICOS
+x11() ; plot(forecast(mod),h=7)
+
